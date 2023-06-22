@@ -1,10 +1,12 @@
-﻿﻿# Bulk.Sql
+## @junioranheu/Bulk.Sql
 
 An easy-to-use and light NuGet package that simplifies the process of performing bulk inserts in .NET 6 applications. With Bulk.Sql you can efficiently insert large amounts of data into your database tables, improving performance and reducing execution time.
 
+👉 <b>Take a look at the usage section below to see how you can use the NuGet package correctly.</b>
+
 ## Deployment
 
-👉 [NuGet Gallery](https://www.nuget.org/packages/Bulk.Sql/).
+[NuGet Gallery](https://www.nuget.org/packages/Bulk.Sql/).
 
 ## Getting Started
 ### Installation
@@ -40,7 +42,7 @@ The third parameter requires the aiming table's name.
 
 The fourth parameter, which is both "hidden" and optional, specifies the time limit in seconds for the bulk copy process.
 
-Last but not least: a static using statement is also required to make it work:
+👉 Last but not least: a static using statement is also required to make it work:
 
 ```
 using static Bulk.BulkCopy;
