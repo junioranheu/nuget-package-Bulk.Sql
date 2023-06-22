@@ -15,6 +15,10 @@
 		<PackageId>Bulk.Sql</PackageId>
 		<Product>Bulk.Sql</Product>
 		<Version>1.0.4</Version>
+		<PackageProjectUrl>https://github.com/junioranheu/nuget-package-Bulk.Sql</PackageProjectUrl>
+		<Copyright>All rights reserved to @junioranheu</Copyright>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>bulk;bulk copy;bulk insert;mysql;sql server;sql</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>
