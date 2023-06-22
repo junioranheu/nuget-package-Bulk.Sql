@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageReadmeFile>README-utf8.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/junioranheu/nuget-package-EFCore.Bulk.Sql</RepositoryUrl>
+		<PackageIcon>cloud.png</PackageIcon>
+		<Title>Bulk.Sql</Title>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Description>An easy-to-use and light NuGet package that simplifies the process of performing bulk inserts in .NET 6 applications. With EFCore.Bulk.Sql you can efficiently insert large amounts of data into your database tables, improving performance and reducing execution time.</Description>
+		<PackageLicenseFile>license.txt</PackageLicenseFile>
+		<Authors>junioranheu</Authors>
+		<PackageId>Bulk.Sql</PackageId>
+		<Product>Bulk.Sql</Product>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.7" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.7" />
+		<PackageReference Include="MySqlConnector" Version="2.2.6" />
+		<PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="Assets\Images\cloud.png" Pack="true" PackagePath="\" />
+		<None Include="Assets\Docs\license.txt" Pack="True" PackagePath="\" />
+		<None Include="Assets\Docs\README-utf8.md" Pack="True" PackagePath="\" />
+	</ItemGroup>
+
+</Project>

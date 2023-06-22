@@ -1,0 +1,1 @@
+﻿An easy-to-use and light NuGet package that simplifies the process of performing bulk inserts in .NET 6 applications. With EFCore.Bulk.Sql you can efficiently insert large amounts of data into your database tables, improving performance and reducing execution time.
