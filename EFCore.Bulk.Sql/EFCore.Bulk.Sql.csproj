@@ -14,6 +14,7 @@
 		<Authors>junioranheu</Authors>
 		<PackageId>Bulk.Sql</PackageId>
 		<Product>Bulk.Sql</Product>
+		<Version>1.0.1</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

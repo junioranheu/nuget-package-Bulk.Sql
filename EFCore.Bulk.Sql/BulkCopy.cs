@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Reflection;
 
-namespace EFCore.Bulk.Sql
+namespace Bulk
 {
     public static class BulkCopy
     {
@@ -27,13 +27,17 @@ namespace EFCore.Bulk.Sql
 
             DbConnection con = context.Database.GetDbConnection();
 
-            if (con is MySqlConnection)
+            if (con is SqlConnection)
+            {
+                await BulkInsert(linq, con as SqlConnection, table, timeOut);
+            }
+            else if (con is MySqlConnection)
             {
                 await BulkInsert(linq, con as MySqlConnection, table, timeOut);
             }
             else
             {
-                await BulkInsert(linq, con as SqlConnection, table, timeOut);
+                throw new Exception($"O parâmetro de conexão deve ser do tipo 'Microsoft.Data.SqlClient.SqlConnection' ou 'MySqlConnection'. Tipo atual: {con.GetType()}");
             }
         }
 
@@ -110,7 +114,7 @@ namespace EFCore.Bulk.Sql
             }
         }
 
-        #region extra;
+        #region helpers;
         private static DataTable ConvertListToDataTable<T>(List<T> linq, SqlBulkCopy? sqlBulk)
         {
             try
