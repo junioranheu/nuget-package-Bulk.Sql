@@ -40,7 +40,7 @@ The third parameter requires the aiming table's name.
 
 The fourth parameter, which is both "hidden" and optional, specifies the time limit in seconds for the bulk copy process.
 
-Last but not least: a using is also required to make it work:
+Last but not least: a static using statement is also required to make it work:
 
 ```
 using static Bulk.BulkCopy;
