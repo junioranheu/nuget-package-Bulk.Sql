@@ -37,7 +37,7 @@ namespace Bulk
             }
             else
             {
-                throw new Exception($"The connection parameter be a 'Microsoft.Data.SqlClient.SqlConnection' or 'MySqlConnection' type. Current type: {con.GetType()}");
+                throw new Exception($"The connection parameter must be a 'Microsoft.Data.SqlClient.SqlConnection' or 'MySqlConnection' type. Current type: {con.GetType()}");
             }
         }
 
