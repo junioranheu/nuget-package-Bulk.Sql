@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Common;
 using System.Reflection;
@@ -142,7 +143,7 @@ namespace Bulk
                 {
                     Type? type = (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>) ? Nullable.GetUnderlyingType(prop.PropertyType) : prop.PropertyType);
 
-                    if (!IsForeignKey(prop))
+                    if (!IsForeignKey(prop) && !IsNotMapped(prop))
                     {
                         sqlBulk?.ColumnMappings.Add(prop.Name, prop.Name);
                         dataTable.Columns.Add(prop.Name, type!);
@@ -167,7 +168,7 @@ namespace Bulk
 
                     for (int i = 0; i < values.Length; i++)
                     {
-                        if (!IsForeignKey(listTypes[i]))
+                        if (!IsForeignKey(listTypes[i]) && !IsNotMapped(listTypes[i]))
                         {
                             values[i] = listTypes[i].GetValue(item, null)!;
                         }
@@ -189,6 +190,11 @@ namespace Bulk
             var isClass = propertyType.IsClass && propertyType != typeof(string);
 
             return isCollection || isClass;
+        }
+
+        static bool IsNotMapped(PropertyInfo property)
+        {
+            return Attribute.IsDefined(property, typeof(NotMappedAttribute));
         }
         #endregion;
     }
