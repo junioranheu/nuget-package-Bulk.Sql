@@ -69,7 +69,7 @@ namespace Bulk
 
                 if (isDisableFKCheck)
                 {
-                    using SqlCommand disableAllConstraintsCmd = new("ALTER TABLE YourTableName NOCHECK ALL", con);
+                    using SqlCommand disableAllConstraintsCmd = new($"ALTER TABLE {table} NOCHECK CONSTRAINT ALL", con);
                     disableAllConstraintsCmd.ExecuteNonQuery();
                 }
 
@@ -79,7 +79,7 @@ namespace Bulk
 
                 if (isDisableFKCheck)
                 {
-                    using SqlCommand enableAllConstraintsCmd = new("ALTER TABLE YourTableName CHECK ALL", con);
+                    using SqlCommand enableAllConstraintsCmd = new($"ALTER TABLE {table} CHECK CONSTRAINT ALL", con);
                     enableAllConstraintsCmd.ExecuteNonQuery();
                 }
 
