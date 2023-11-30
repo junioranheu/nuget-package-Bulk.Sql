@@ -19,11 +19,11 @@ namespace Bulk
         /// <param name="context">Application's context.</param>
         /// <param name="table">Aiming table.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T, TContext>(List<T> linq, TContext context, string table, int? timeOut = timeOutDefault) where TContext : DbContext
+        public static async Task BulkInsert<T, TContext>(List<T> linq, TContext context, string table, int? timeOut = timeOutDefault, bool? isExceptionInPortuguese = false) where TContext : DbContext
         {
             if (context is null)
             {
-                throw new Exception("The connection parameter must not be null");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
             }
 
             DbConnection con = context.Database.GetDbConnection();
@@ -38,7 +38,7 @@ namespace Bulk
             }
             else
             {
-                throw new Exception($"The connection parameter must be a 'Microsoft.Data.SqlClient.SqlConnection' or 'MySqlConnection' type. Current type: {con.GetType()}");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? $"O parâmetro de conexão deve ser do tipo 'Microsoft.Data.SqlClient.SqlConnection' ou 'MySqlConnection'. Tipo atual: {con.GetType()}" : $"The connection parameter must be a 'Microsoft.Data.SqlClient.SqlConnection' or 'MySqlConnection' type. Current type: {con.GetType()}");
             }
         }
 
@@ -49,11 +49,11 @@ namespace Bulk
         /// <param name="con">SqlConnection.</param>
         /// <param name="table">Aiming table.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T>(List<T> linq, SqlConnection? con, string table, int? timeOut = timeOutDefault)
+        public static async Task BulkInsert<T>(List<T> linq, SqlConnection? con, string table, int? timeOut = timeOutDefault, bool? isExceptionInPortuguese = false)
         {
             if (con is null)
             {
-                throw new Exception("The connection parameter must not be null");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
             }
 
             SqlBulkCopy sqlBulk = new(con)
@@ -61,7 +61,7 @@ namespace Bulk
                 DestinationTableName = table
             };
 
-            DataTable dataTable = ConvertListToDataTable(linq, sqlBulk);
+            DataTable dataTable = ConvertListToDataTable(linq, sqlBulk, isExceptionInPortuguese.GetValueOrDefault());
 
             try
             {
@@ -75,7 +75,7 @@ namespace Bulk
             }
             catch (Exception ex)
             {
-                throw new Exception($"There was an internal error while saving the data. {ex.Message}");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
             }
         }
 
@@ -86,11 +86,11 @@ namespace Bulk
         /// <param name="con">SqlConnection.</param>
         /// <param name="table">Aiming table.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T>(List<T> linq, MySqlConnection? con, string table, int? timeOut = timeOutDefault)
+        public static async Task BulkInsert<T>(List<T> linq, MySqlConnection? con, string table, int? timeOut = timeOutDefault, bool? isExceptionInPortuguese = false)
         {
             if (con is null)
             {
-                throw new Exception("The connection parameter must not be null");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
             }
 
             MySqlBulkCopy sqlBulk = new(con)
@@ -98,7 +98,7 @@ namespace Bulk
                 DestinationTableName = table
             };
 
-            DataTable dataTable = ConvertListToDataTable(linq, null);
+            DataTable dataTable = ConvertListToDataTable(linq, null, isExceptionInPortuguese.GetValueOrDefault());
 
             try
             {
@@ -111,12 +111,12 @@ namespace Bulk
             }
             catch (Exception ex)
             {
-                throw new Exception($"There was an internal error while saving the data. {ex.Message}");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
             }
         }
 
         #region helpers;
-        private static DataTable ConvertListToDataTable<T>(List<T> linq, SqlBulkCopy? sqlBulk)
+        private static DataTable ConvertListToDataTable<T>(List<T> linq, SqlBulkCopy? sqlBulk, bool isExceptionInPortuguese)
         {
             try
             {
@@ -124,18 +124,18 @@ namespace Bulk
                 PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
                 List<PropertyInfo> listTypes = new();
 
-                MapColumns(sqlBulk, dataTable, props, listTypes);
-                PopulateTable(linq, dataTable, listTypes);
+                MapColumns(sqlBulk, dataTable, props, listTypes, isExceptionInPortuguese);
+                PopulateTable(linq, dataTable, listTypes, isExceptionInPortuguese);
 
                 return dataTable;
             }
             catch (Exception ex)
             {
-                throw new Exception($"There was an internal error while converting the data. {ex.Message}");
+                throw new Exception(isExceptionInPortuguese ? $"Houve um erro interno ao converter os dados. {ex.Message}" : $"There was an internal error while converting the data. {ex.Message}");
             }
         }
 
-        private static void MapColumns(SqlBulkCopy? sqlBulk, DataTable dataTable, PropertyInfo[] props, List<PropertyInfo> listTypes)
+        private static void MapColumns(SqlBulkCopy? sqlBulk, DataTable dataTable, PropertyInfo[] props, List<PropertyInfo> listTypes, bool isExceptionInPortuguese)
         {
             try
             {
@@ -143,7 +143,7 @@ namespace Bulk
                 {
                     Type? type = (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>) ? Nullable.GetUnderlyingType(prop.PropertyType) : prop.PropertyType);
 
-                    if (!IsForeignKey(prop) && !IsNotMapped(prop))
+                    if (!IsForeignKey(prop) && !IsNotMapped(prop) && !IsVirtual(prop) && !IsAbstract(prop))
                     {
                         sqlBulk?.ColumnMappings.Add(prop.Name, prop.Name);
                         dataTable.Columns.Add(prop.Name, type!);
@@ -154,11 +154,11 @@ namespace Bulk
             }
             catch (Exception ex)
             {
-                throw new Exception($"There was an internal error while mapping the DataTable. {ex.Message}");
+                throw new Exception(isExceptionInPortuguese ? $"Houve um erro interno ao mapear a tabela virtual de dados. {ex.Message}" : $"There was an internal error while mapping the DataTable. {ex.Message}");
             }
         }
 
-        private static void PopulateTable<T>(List<T> linq, DataTable dataTable, List<PropertyInfo> listTypes)
+        private static void PopulateTable<T>(List<T> linq, DataTable dataTable, List<PropertyInfo> listTypes, bool isExceptionInPortuguese)
         {
             try
             {
@@ -179,7 +179,7 @@ namespace Bulk
             }
             catch (Exception ex)
             {
-                throw new Exception($"There was an internal error while assigning values ​​to the DataTable. {ex.Message}");
+                throw new Exception(isExceptionInPortuguese ? $"Houve um erro interno ao atribuir valores à tabela virtual de dados. {ex.Message}" : $"There was an internal error while assigning values ​​to the DataTable. {ex.Message}");
             }
         }
 
@@ -192,9 +192,33 @@ namespace Bulk
             return isCollection || isClass;
         }
 
-        static bool IsNotMapped(PropertyInfo property)
+        private static bool IsNotMapped(PropertyInfo property)
         {
             return Attribute.IsDefined(property, typeof(NotMappedAttribute));
+        }
+
+        private static bool IsVirtual(PropertyInfo property)
+        {
+            try
+            {
+                return property.GetGetMethod()?.IsVirtual == true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static bool IsAbstract(PropertyInfo property)
+        {
+            try
+            {
+                return property.GetGetMethod()?.IsAbstract == true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
         #endregion;
     }
