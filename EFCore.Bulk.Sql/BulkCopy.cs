@@ -19,7 +19,7 @@ namespace Bulk
         /// <param name="context">Application's context.</param>
         /// <param name="table">Aiming table.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T, TContext>(List<T> linq, TContext context, string table, int? timeOut = timeOutDefault, bool? isExceptionInPortuguese = false) where TContext : DbContext
+        public static async Task BulkInsert<T, TContext>(List<T> linq, TContext context, string table, int? timeOut = timeOutDefault, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false) where TContext : DbContext
         {
             if (context is null)
             {
@@ -30,11 +30,11 @@ namespace Bulk
 
             if (con is SqlConnection)
             {
-                await BulkInsert(linq, con as SqlConnection, table, timeOut);
+                await BulkInsert(linq, con as SqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
             else if (con is MySqlConnection)
             {
-                await BulkInsert(linq, con as MySqlConnection, table, timeOut);
+                await BulkInsert(linq, con as MySqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
             else
             {
@@ -49,11 +49,11 @@ namespace Bulk
         /// <param name="con">SqlConnection.</param>
         /// <param name="table">Aiming table.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T>(List<T> linq, SqlConnection? con, string table, int? timeOut = timeOutDefault, bool? isExceptionInPortuguese = false)
+        public static async Task BulkInsert<T>(List<T> linq, SqlConnection? con, string table, bool isExceptionInPortuguese, bool isDisableFKCheck, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
-                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
+                throw new Exception(isExceptionInPortuguese ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
             }
 
             SqlBulkCopy sqlBulk = new(con)
@@ -61,21 +61,34 @@ namespace Bulk
                 DestinationTableName = table
             };
 
-            DataTable dataTable = ConvertListToDataTable(linq, sqlBulk, isExceptionInPortuguese.GetValueOrDefault());
+            DataTable dataTable = ConvertListToDataTable(linq, sqlBulk, isExceptionInPortuguese);
 
             try
             {
                 await con.OpenAsync();
+
+                if (isDisableFKCheck)
+                {
+                    using SqlCommand disableAllConstraintsCmd = new("ALTER TABLE YourTableName NOCHECK ALL", con);
+                    disableAllConstraintsCmd.ExecuteNonQuery();
+                }
+
                 sqlBulk.BulkCopyTimeout = timeOut ?? timeOutDefault;
                 sqlBulk.BatchSize = 5000;
                 await sqlBulk.WriteToServerAsync(dataTable);
+
+                if (isDisableFKCheck)
+                {
+                    using SqlCommand enableAllConstraintsCmd = new("ALTER TABLE YourTableName CHECK ALL", con);
+                    enableAllConstraintsCmd.ExecuteNonQuery();
+                }
 
                 await con.CloseAsync();
                 dataTable.Clear();
             }
             catch (Exception ex)
             {
-                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
+                throw new Exception(isExceptionInPortuguese ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
             }
         }
 
@@ -86,11 +99,11 @@ namespace Bulk
         /// <param name="con">SqlConnection.</param>
         /// <param name="table">Aiming table.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T>(List<T> linq, MySqlConnection? con, string table, int? timeOut = timeOutDefault, bool? isExceptionInPortuguese = false)
+        public static async Task BulkInsert<T>(List<T> linq, MySqlConnection? con, string table, bool isExceptionInPortuguese, bool isDisableFKCheck, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
-                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
+                throw new Exception(isExceptionInPortuguese ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
             }
 
             MySqlBulkCopy sqlBulk = new(con)
@@ -98,20 +111,33 @@ namespace Bulk
                 DestinationTableName = table
             };
 
-            DataTable dataTable = ConvertListToDataTable(linq, null, isExceptionInPortuguese.GetValueOrDefault());
+            DataTable dataTable = ConvertListToDataTable(linq, null, isExceptionInPortuguese);
 
             try
             {
                 await con.OpenAsync();
+
+                if (isDisableFKCheck)
+                {
+                    using MySqlCommand disableFkCmd = new("SET foreign_key_checks = 0", con);
+                    disableFkCmd.ExecuteNonQuery();
+                }
+
                 sqlBulk.BulkCopyTimeout = timeOut ?? timeOutDefault;
                 await sqlBulk.WriteToServerAsync(dataTable);
+
+                if (isDisableFKCheck)
+                {
+                    using MySqlCommand enableFkCmd = new("SET foreign_key_checks = 1", con);
+                    enableFkCmd.ExecuteNonQuery();
+                }
 
                 await con.CloseAsync();
                 dataTable.Clear();
             }
             catch (Exception ex)
             {
-                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
+                throw new Exception(isExceptionInPortuguese ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
             }
         }
 
@@ -143,7 +169,7 @@ namespace Bulk
                 {
                     Type? type = (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>) ? Nullable.GetUnderlyingType(prop.PropertyType) : prop.PropertyType);
 
-                    if (!IsForeignKey(prop) && !IsNotMapped(prop) && !IsVirtual(prop) && !IsAbstract(prop))
+                    if (!IsForeignKey(prop) && !IsNotMapped(prop) && !IsVirtual(prop) && !IsAbstract(prop) && !IsList(prop))
                     {
                         sqlBulk?.ColumnMappings.Add(prop.Name, prop.Name);
                         dataTable.Columns.Add(prop.Name, type!);
@@ -168,7 +194,7 @@ namespace Bulk
 
                     for (int i = 0; i < values.Length; i++)
                     {
-                        if (!IsForeignKey(listTypes[i]) && !IsNotMapped(listTypes[i]))
+                        if (!IsForeignKey(listTypes[i]) && !IsNotMapped(listTypes[i]) && !IsVirtual(listTypes[i]) && !IsAbstract(listTypes[i]) && !IsList(listTypes[i]))
                         {
                             values[i] = listTypes[i].GetValue(item, null)!;
                         }
@@ -188,8 +214,9 @@ namespace Bulk
             var propertyType = property.PropertyType;
             var isCollection = propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(ICollection<>);
             var isClass = propertyType.IsClass && propertyType != typeof(string);
+            var isByteArray = propertyType == typeof(byte[]);
 
-            return isCollection || isClass;
+            return (isCollection || isClass) && !isByteArray;
         }
 
         private static bool IsNotMapped(PropertyInfo property)
@@ -214,6 +241,25 @@ namespace Bulk
             try
             {
                 return property.GetGetMethod()?.IsAbstract == true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static bool IsList(PropertyInfo property)
+        {
+            try
+            {
+                Type propertyType = property.PropertyType;
+
+                if (propertyType.IsGenericType && (propertyType.GetGenericTypeDefinition() == typeof(List<>) || propertyType.GetGenericTypeDefinition() == typeof(IQueryable<>) || propertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+                {
+                    return true;
+                }
+
+                return false;
             }
             catch (Exception)
             {
