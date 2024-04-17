@@ -36,7 +36,7 @@ await BulkInsert(list, _context, "TableName");
 The first parameter requires a list — commonly resulting from a LINQ query.
 
 The second parameter allows you to pass whether the application's context or a direct SqlConnection/MySqlConnection data base connection.<br/>
-E.g.: new MySqlConnection(conectionString) or new MySqlConnection(conectionString).
+E.g.: new MySqlConnection(connectionString) or new MySqlConnection(connectionString).
 
 The third parameter requires the aiming table's name.
 
