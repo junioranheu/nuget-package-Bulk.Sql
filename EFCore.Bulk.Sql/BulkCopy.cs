@@ -49,11 +49,11 @@ namespace Bulk
         /// <param name="con">SqlConnection.</param>
         /// <param name="table">Aiming table.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T>(List<T> linq, SqlConnection? con, string table, bool isExceptionInPortuguese, bool isDisableFKCheck, int? timeOut = timeOutDefault)
+        public static async Task BulkInsert<T>(List<T> linq, SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
-                throw new Exception(isExceptionInPortuguese ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
             }
 
             SqlBulkCopy sqlBulk = new(con)
@@ -61,13 +61,13 @@ namespace Bulk
                 DestinationTableName = table
             };
 
-            DataTable dataTable = ConvertListToDataTable(linq, sqlBulk, isExceptionInPortuguese);
+            DataTable dataTable = ConvertListToDataTable(linq, sqlBulk, isExceptionInPortuguese.GetValueOrDefault());
 
             try
             {
                 await con.OpenAsync();
 
-                if (isDisableFKCheck)
+                if (isDisableFKCheck.GetValueOrDefault())
                 {
                     using SqlCommand disableAllConstraintsCmd = new($"ALTER TABLE {table} NOCHECK CONSTRAINT ALL", con);
                     disableAllConstraintsCmd.ExecuteNonQuery();
@@ -77,7 +77,7 @@ namespace Bulk
                 sqlBulk.BatchSize = 5000;
                 await sqlBulk.WriteToServerAsync(dataTable);
 
-                if (isDisableFKCheck)
+                if (isDisableFKCheck.GetValueOrDefault())
                 {
                     using SqlCommand enableAllConstraintsCmd = new($"ALTER TABLE {table} CHECK CONSTRAINT ALL", con);
                     enableAllConstraintsCmd.ExecuteNonQuery();
@@ -88,7 +88,7 @@ namespace Bulk
             }
             catch (Exception ex)
             {
-                throw new Exception(isExceptionInPortuguese ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
             }
         }
 
@@ -99,11 +99,11 @@ namespace Bulk
         /// <param name="con">SqlConnection.</param>
         /// <param name="table">Aiming table.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T>(List<T> linq, MySqlConnection? con, string table, bool isExceptionInPortuguese, bool isDisableFKCheck, int? timeOut = timeOutDefault)
+        public static async Task BulkInsert<T>(List<T> linq, MySqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
-                throw new Exception(isExceptionInPortuguese ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? "O parâmetro de conexão não deve ser nulo" : "The connection parameter must not be null");
             }
 
             MySqlBulkCopy sqlBulk = new(con)
@@ -111,13 +111,13 @@ namespace Bulk
                 DestinationTableName = table
             };
 
-            DataTable dataTable = ConvertListToDataTable(linq, null, isExceptionInPortuguese);
+            DataTable dataTable = ConvertListToDataTable(linq, null, isExceptionInPortuguese.GetValueOrDefault());
 
             try
             {
                 await con.OpenAsync();
 
-                if (isDisableFKCheck)
+                if (isDisableFKCheck.GetValueOrDefault())
                 {
                     using MySqlCommand disableFkCmd = new("SET foreign_key_checks = 0", con);
                     disableFkCmd.ExecuteNonQuery();
@@ -126,7 +126,7 @@ namespace Bulk
                 sqlBulk.BulkCopyTimeout = timeOut ?? timeOutDefault;
                 await sqlBulk.WriteToServerAsync(dataTable);
 
-                if (isDisableFKCheck)
+                if (isDisableFKCheck.GetValueOrDefault())
                 {
                     using MySqlCommand enableFkCmd = new("SET foreign_key_checks = 1", con);
                     enableFkCmd.ExecuteNonQuery();
@@ -137,7 +137,7 @@ namespace Bulk
             }
             catch (Exception ex)
             {
-                throw new Exception(isExceptionInPortuguese ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
+                throw new Exception(isExceptionInPortuguese.GetValueOrDefault() ? $"Houve um erro interno ao salvar os dados. {ex.Message}" : $"There was an internal error while saving the data. {ex.Message}");
             }
         }
 
