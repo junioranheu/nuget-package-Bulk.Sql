@@ -25,7 +25,7 @@ Install-Package Bulk.Sql
 dotnet add package Bulk.Sql
 ```
 
-### Usage
+### BulkInsert usage
 
 Once you have installed the Bulk.Sql package, you can follow these steps to start using it in your .NET 6 project:
 
@@ -47,6 +47,22 @@ E.g.: new SqlConnection(connectionString) or new MySqlConnection(connectionStrin
 The third parameter requires the aiming table's name.
 
 There are other optional parameters. Be sure to check them out after downloading the package.
+
+### BulkDelete usage
+
+```
+await Bulk.Helpers.BulkDelete<ClassHere>(_context, condition: x => x.Status == true && x.Amount >= 22);
+```
+
+or
+
+```
+await Bulk.Helpers.BulkDelete<ClassHere>(_context);
+```
+
+The first parameter requires the application's context.
+
+The second parameter is optional. You can pass a LINQ expression.
 
 ## Compatibility
 
