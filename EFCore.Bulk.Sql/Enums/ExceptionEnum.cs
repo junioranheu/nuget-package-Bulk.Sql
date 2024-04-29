@@ -13,7 +13,7 @@ namespace EFCore.Bulk.Sql.Enums
         [Description("O parâmetro de conexão deve ser do tipo 'Microsoft.Data.SqlClient.SqlConnection', 'System.Data.SqlClient.SqlConnection' ou 'MySqlConnection'.")]
         ParamConexaoDeveSer,
 
-        [Description("The connection parameter must be a 'Microsoft.Data.SqlClient.SqlConnection', System.Data.SqlClient.SqlConnection, or 'MySqlConnection' type.")]
+        [Description("The connection parameter must be a 'Microsoft.Data.SqlClient.SqlConnection', 'System.Data.SqlClient.SqlConnection', or 'MySqlConnection' type.")]
         ParamConexaoDeveSer_EN,
 
         [Description("Houve um erro interno ao salvar os dados.")]

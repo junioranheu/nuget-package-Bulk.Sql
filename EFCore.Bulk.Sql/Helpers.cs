@@ -122,8 +122,8 @@ namespace Bulk
 
             try
             {
-                System.Data.SqlClient.SqlConnection conSystem = new(con.ConnectionString);
-                await BulkInsert(linq, conSystem, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
+                Microsoft.Data.SqlClient.SqlConnection conMicrosoft = new(con.ConnectionString);
+                await BulkInsert(linq, conMicrosoft, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
             catch (Exception)
             {
@@ -340,6 +340,6 @@ namespace Bulk
         {
             return $"{GetEnumDesc(isExceptionInPortuguese.GetValueOrDefault() ? br : en)}{(!string.IsNullOrEmpty(extra) ? $" {extra}" : string.Empty)}";
         }
-        #endregion;
+        #endregion
     }
 }
