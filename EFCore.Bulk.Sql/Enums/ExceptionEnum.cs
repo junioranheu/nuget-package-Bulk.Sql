@@ -40,6 +40,12 @@ namespace EFCore.Bulk.Sql.Enums
         [Description("There was an internal error while converting the data.")]
         ErroInternoConverterDados_EN,
 
+        [Description("Houve um erro interno ao converter a biblioteca System.Data.SqlClient para Microsoft.Data.SqlClient.")]
+        ErroInternoConverterSQLServerDeSystemParaMicrosoft,
+
+        [Description("There was an internal error while converting System.Data.SqlClient to Microsoft.Data.SqlClient.")]
+        ErroInternoConverterSQLServerDeSystemParaMicrosoft_EN,
+
         [Description("Houve um erro interno ao deletar os dados.")]
         ErroInternoDeletar,
 

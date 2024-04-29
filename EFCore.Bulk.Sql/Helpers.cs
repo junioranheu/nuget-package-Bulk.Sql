@@ -40,7 +40,7 @@ namespace Bulk
             }
             else if (con is System.Data.SqlClient.SqlConnection)
             {
-                await BulkInsert(linq, con as SqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
+                await BulkInsert(linq, con as System.Data.SqlClient.SqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
             else if (con is MySqlConnection)
             {
@@ -101,6 +101,33 @@ namespace Bulk
             catch (Exception ex)
             {
                 throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoSalvar, en: ExceptionEnum.ErroInternoSalvar_EN, extra: $"{ex.Message}."));
+            }
+        }
+
+        /// <summary>
+        /// LINQ to DataTable to Bulk • SQL Server;
+        /// </summary>
+        /// <param name="linq">A list — commonly resulting from a LINQ query.</param>
+        /// <param name="con">SQL Server connection (System.Data.SqlClient).</param>
+        /// <param name="table">Aiming table.</param>
+        /// <param name="isExceptionInPortuguese">Exception's text language.</param>
+        /// <param name="isDisableFKCheck">Controlling the database FKs checking.</param>
+        /// <param name="timeOut">Bulk copy time out in seconds.</param>
+        public static async Task BulkInsert<T>(List<T> linq, System.Data.SqlClient.SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        {
+            if (con is null)
+            {
+                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ParamConexNaoPodeSerNulo, en: ExceptionEnum.ParamConexNaoPodeSerNulo_EN));
+            }
+
+            try
+            {
+                System.Data.SqlClient.SqlConnection conSystem = new(con.ConnectionString);
+                await BulkInsert(linq, conSystem, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
+            }
+            catch (Exception)
+            {
+                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoConverterSQLServerDeSystemParaMicrosoft, en: ExceptionEnum.ErroInternoConverterSQLServerDeSystemParaMicrosoft_EN));
             }
         }
 
