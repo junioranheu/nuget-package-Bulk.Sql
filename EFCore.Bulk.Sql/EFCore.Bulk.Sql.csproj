@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
@@ -14,7 +14,7 @@
 		<Authors>junioranheu</Authors>
 		<PackageId>Bulk.Sql</PackageId>
 		<Product>Bulk.Sql</Product>
-		<Version>1.0.10</Version>
+		<Version>1.0.12</Version>
 		<PackageProjectUrl>https://github.com/junioranheu/nuget-package-Bulk.Sql</PackageProjectUrl>
 		<Copyright>All rights reserved to @junioranheu</Copyright>
 		<RepositoryType>git</RepositoryType>
@@ -22,16 +22,23 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.9" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.9" />
-		<PackageReference Include="MySqlConnector" Version="2.2.7" />
+		<PackageReference Include="MySqlConnector" Version="2.3.7" />
+		<PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Remove="Enums\" />
+	</ItemGroup>
 	<ItemGroup>
 		<None Include="Assets\Images\cloud.png" Pack="true" PackagePath="\" />
 		<None Include="Assets\Docs\license.txt" Pack="True" PackagePath="\" />
 		<None Include="Assets\Docs\README-utf8.md" Pack="True" PackagePath="\" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Enums\" />
+	</ItemGroup>
 </Project>
