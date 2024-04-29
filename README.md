@@ -30,27 +30,27 @@ dotnet add package Bulk.Sql
 Once you have installed the Bulk.Sql package, you can follow these steps to start using it in your .NET 6 project:
 
 ```
-await BulkInsert(list, _context, "TableName");
+await Bulk.Helpers.BulkInsert(list, _context, "TableName");
+```
+
+or
+
+```
+await Bulk.Helpers.BulkInsert(list, con, "TableName");
 ```
 
 The first parameter requires a list — commonly resulting from a LINQ query.
 
-The second parameter allows you to pass whether the application's context or a direct SqlConnection/MySqlConnection data base connection.<br/>
+The second parameter allows you to pass whether the application's context, a SqlConnection (Microsoft.Data.SqlClient or System.Data.SqlClient), or a MySqlConnection data base connection.<br/>
 E.g.: new SqlConnection(connectionString) or new MySqlConnection(connectionString).
 
 The third parameter requires the aiming table's name.
 
-The fourth parameter, which is both "hidden" and optional, specifies the time limit in seconds for the bulk copy process.
-
-👉 Last but not least: a static using statement is also required to make it work:
-
-```
-using static Bulk.BulkCopy;
-```
+There are other optional parameters. Be sure to check them out after downloading the package.
 
 ## Compatibility
 
-Bulk.Sql is compatible with .NET 6. It supports the following database providers: SQL Server and MySQL.
+Bulk.Sql is compatible with .NET 6. It supports the following database providers: SQL Server (Microsoft.Data.SqlClient or System.Data.SqlClient) and MySQL.
 
 ## Support
 
