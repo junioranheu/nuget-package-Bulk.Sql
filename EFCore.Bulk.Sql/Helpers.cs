@@ -189,10 +189,16 @@ namespace Bulk
         /// </summary>
         /// <param name="dbContext">Application's context.</param>
         /// <param name="condition">LINQ's "where" condition.</param>
-        public static async Task BulkDelete<T>(DbContext dbContext, Expression<Func<T, bool>> condition, bool? isExceptionInPortuguese = false) where T : class
+        public static async Task BulkDelete<T>(DbContext dbContext, Expression<Func<T, bool>>? condition = null, bool? isExceptionInPortuguese = false) where T : class
         {
             try
             {
+                if (condition is null)
+                {
+                    await dbContext.Set<T>().ExecuteDeleteAsync();
+                    return;
+                }
+
                 await dbContext.Set<T>().Where(condition).ExecuteDeleteAsync();
             }
             catch (Exception ex)
