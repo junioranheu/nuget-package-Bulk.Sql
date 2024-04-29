@@ -1,6 +1,6 @@
 ## @junioranheu/Bulk.Sql
 
-An easy-to-use and light NuGet package that simplifies the process of performing bulk inserts in .NET 6 applications. With Bulk.Sql you can efficiently insert large amounts of data into your database tables, improving performance and reducing execution time.
+An easy-to-use and light NuGet package that simplifies the process of performing bulk inserts/deletes in .NET 6 applications. With Bulk.Sql you can efficiently insert and delete large amounts of data into your database tables, improving performance and reducing execution time.
 
 👉 <b>Take a look at the usage section below to see how you can use the NuGet package correctly.</b>
 
