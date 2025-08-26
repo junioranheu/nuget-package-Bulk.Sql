@@ -49,7 +49,7 @@ namespace EFCore.Bulk.Sql
             }
             else if (con is NpgsqlConnection)
             {
-                await BulkInsert(linq, con as NpgsqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
+                await BulkInsert(linq, con as NpgsqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault());
             }
             else
             {
@@ -196,7 +196,7 @@ namespace EFCore.Bulk.Sql
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking (via triggers).</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        private static async Task BulkInsert<T>(List<T> linq, NpgsqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        private static async Task BulkInsert<T>(List<T> linq, NpgsqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false)
         {
             if (con is null)
             {

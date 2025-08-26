@@ -5,6 +5,8 @@ VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.Bulk.Sql", "EFCore.Bulk.Sql\EFCore.Bulk.Sql.csproj", "{202C523D-A131-40E6-8BBA-3C66B3E826B7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.Bulk.Sql.UnitTests", "EFCore.Bulk.Sql.UnitTests\EFCore.Bulk.Sql.UnitTests.csproj", "{0E09F161-B005-43F6-961E-038F714984FD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{202C523D-A131-40E6-8BBA-3C66B3E826B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{202C523D-A131-40E6-8BBA-3C66B3E826B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{202C523D-A131-40E6-8BBA-3C66B3E826B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E09F161-B005-43F6-961E-038F714984FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E09F161-B005-43F6-961E-038F714984FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E09F161-B005-43F6-961E-038F714984FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E09F161-B005-43F6-961E-038F714984FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
