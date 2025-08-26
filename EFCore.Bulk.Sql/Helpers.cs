@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using Npgsql;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
@@ -9,7 +10,7 @@ using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Bulk
+namespace EFCore.Bulk.Sql
 {
     public static class Helpers
     {
@@ -17,7 +18,7 @@ namespace Bulk
 
         #region BulkInsert
         /// <summary>
-        /// LINQ to DataTable to Bulk • Defines programmatically if it is whether SQL Server or MySQL.
+        /// LINQ to DataTable to Bulk • Defines programmatically if it is whether SQL Server (Microsoft.Data.SqlClient or System.Data.SqlClient), MySQL or PostgreSQL.
         /// </summary>
         /// <param name="linq">A list — commonly resulting from a LINQ query.</param>
         /// <param name="context">Application's context.</param>
@@ -46,6 +47,10 @@ namespace Bulk
             {
                 await BulkInsert(linq, con as MySqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
+            else if (con is NpgsqlConnection)
+            {
+                await BulkInsert(linq, con as NpgsqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
+            }
             else
             {
                 throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ParamConexaoDeveSer, en: ExceptionEnum.ParamConexaoDeveSer_EN, extra: $"[{con.GetType()}]"));
@@ -53,7 +58,7 @@ namespace Bulk
         }
 
         /// <summary>
-        /// LINQ to DataTable to Bulk • SQL Server;
+        /// LINQ to DataTable to Bulk • SQL Server (Microsoft.Data.SqlClient);
         /// </summary>
         /// <param name="linq">A list — commonly resulting from a LINQ query.</param>
         /// <param name="con">SQL Server connection (Microsoft.Data.SqlClient).</param>
@@ -61,7 +66,7 @@ namespace Bulk
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T>(List<T> linq, SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        private static async Task BulkInsert<T>(List<T> linq, SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
@@ -105,7 +110,7 @@ namespace Bulk
         }
 
         /// <summary>
-        /// LINQ to DataTable to Bulk • SQL Server;
+        /// LINQ to DataTable to Bulk • SQL Server (System.Data.SqlClient);
         /// </summary>
         /// <param name="linq">A list — commonly resulting from a LINQ query.</param>
         /// <param name="con">SQL Server connection (System.Data.SqlClient).</param>
@@ -113,7 +118,7 @@ namespace Bulk
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T>(List<T> linq, System.Data.SqlClient.SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        private static async Task BulkInsert<T>(List<T> linq, System.Data.SqlClient.SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
@@ -122,7 +127,7 @@ namespace Bulk
 
             try
             {
-                Microsoft.Data.SqlClient.SqlConnection conMicrosoft = new(con.ConnectionString);
+                SqlConnection conMicrosoft = new(con.ConnectionString);
                 await BulkInsert(linq, conMicrosoft, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
             catch (Exception)
@@ -140,7 +145,7 @@ namespace Bulk
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        public static async Task BulkInsert<T>(List<T> linq, MySqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        private static async Task BulkInsert<T>(List<T> linq, MySqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
@@ -171,6 +176,67 @@ namespace Bulk
                 {
                     using MySqlCommand enableFkCmd = new("SET foreign_key_checks = 1", con);
                     enableFkCmd.ExecuteNonQuery();
+                }
+
+                await con.CloseAsync();
+                dataTable.Clear();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoSalvar, en: ExceptionEnum.ErroInternoSalvar_EN, extra: $"{ex.Message}."));
+            }
+        }
+
+        /// <summary>
+        /// LINQ to DataTable to Bulk • PostgreSQL;
+        /// </summary>
+        /// <param name="linq">A list — commonly resulting from a LINQ query.</param>
+        /// <param name="con">PostgreSQL connection.</param>
+        /// <param name="table">Aiming table.</param>
+        /// <param name="isExceptionInPortuguese">Exception's text language.</param>
+        /// <param name="isDisableFKCheck">Controlling the database FKs checking (via triggers).</param>
+        /// <param name="timeOut">Bulk copy time out in seconds.</param>
+        private static async Task BulkInsert<T>(List<T> linq, NpgsqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        {
+            if (con is null)
+            {
+                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ParamConexNaoPodeSerNulo, en: ExceptionEnum.ParamConexNaoPodeSerNulo_EN));
+            }
+
+            DataTable dataTable = ConvertListToDataTable(linq, null, isExceptionInPortuguese.GetValueOrDefault());
+
+            try
+            {
+                await con.OpenAsync();
+
+                if (isDisableFKCheck.GetValueOrDefault())
+                {
+                    using NpgsqlCommand disableTriggersCmd = new($"ALTER TABLE {table} DISABLE TRIGGER ALL", con);
+                    await disableTriggersCmd.ExecuteNonQueryAsync();
+                }
+
+                string[] columnNames = dataTable.Columns.Cast<DataColumn>().Select(c => c.ColumnName).ToArray();
+                string columnsSql = string.Join(", ", columnNames);
+
+                using (var writer = con.BeginBinaryImport($"COPY {table} ({columnsSql}) FROM STDIN (FORMAT BINARY)"))
+                {
+                    foreach (DataRow row in dataTable.Rows)
+                    {
+                        await writer.StartRowAsync();
+
+                        foreach (var col in columnNames)
+                        {
+                            await writer.WriteAsync(row[col] == DBNull.Value ? null : row[col]);
+                        }
+                    }
+
+                    await writer.CompleteAsync();
+                }
+
+                if (isDisableFKCheck.GetValueOrDefault())
+                {
+                    using NpgsqlCommand enableTriggersCmd = new($"ALTER TABLE {table} ENABLE TRIGGER ALL", con);
+                    await enableTriggersCmd.ExecuteNonQueryAsync();
                 }
 
                 await con.CloseAsync();
@@ -234,7 +300,7 @@ namespace Bulk
             {
                 foreach (PropertyInfo prop in props)
                 {
-                    Type? type = (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>) ? Nullable.GetUnderlyingType(prop.PropertyType) : prop.PropertyType);
+                    Type? type = prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>) ? Nullable.GetUnderlyingType(prop.PropertyType) : prop.PropertyType;
 
                     if (!IsForeignKey(prop) && !IsNotMapped(prop) && !IsVirtual(prop) && !IsAbstract(prop) && !IsList(prop))
                     {
@@ -337,7 +403,7 @@ namespace Bulk
         private static string GetEnumDesc(Enum enumVal)
         {
             MemberInfo[] memInfo = enumVal.GetType().GetMember(enumVal.ToString());
-            DescriptionAttribute? attribute = CustomAttributeExtensions.GetCustomAttribute<DescriptionAttribute>(memInfo[0]);
+            DescriptionAttribute? attribute = memInfo[0].GetCustomAttribute<DescriptionAttribute>();
 
             return attribute!.Description;
         }
