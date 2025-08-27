@@ -27,20 +27,23 @@ dotnet add package Bulk.Sql
 
 ### BulkInsert usage
 
-Once you have installed the Bulk.Sql package, you can follow these steps to start using it in your .NET 6 project:
+Once you have installed the Bulk.Sql package, **make sure to import the proper using statement in your file**, then you can start using it in your .NET 6 project:
 
 ```
 await Bulk.Insert(list, _context, "TableName");
 ```
 
-The first parameter requires a list — commonly resulting from a LINQ query.
+1️⃣ The first parameter requires a list — commonly resulting from a LINQ query.
 
-The second parameter allows you to pass whether the application's context, a SqlConnection (Microsoft.Data.SqlClient or System.Data.SqlClient), a MySqlConnection or a NpgsqlConnection data base connection.<br/>
-E.g.: new SqlConnection(connectionString), new MySqlConnection(connectionString), or NpgsqlConnection(connectionString).
+2️⃣ The second parameter allows you to pass whether the application's context, a SqlConnection (Microsoft.Data.SqlClient or System.Data.SqlClient), a MySqlConnection or a NpgsqlConnection data base connection.<br/>
+E.g.: new SqlConnection(connectionString), new MySqlConnection(connectionString), or new NpgsqlConnection(connectionString).
 
-The third parameter requires the aiming table's name.
+3️⃣ The third parameter requires the aiming table's name.
 
-There are other optional parameters. Be sure to check them out after downloading the package.
+*️⃣ There are other optional parameters. Be sure to check them out after downloading the package.
+
+⚠️ Important note for PostgreSQL:
+When using Bulk.Insert on PostgreSQL tables, columns that are Primary Keys with autoincrement (e.g., SERIAL, BIGSERIAL, IDENTITY) must be passed as null in the list. This way, the database itself will generate the values automatically during the insert. This behavior has only been confirmed for PostgreSQL. It has not been verified for SQL Server or MySQL.
 
 ### BulkDelete usage
 
@@ -54,9 +57,12 @@ or
 await Bulk.Delete<ClassHere>(_context);
 ```
 
-The first parameter requires the application's context.
+1️⃣ The first parameter requires the application's context.
 
-The second parameter is optional. You can pass a LINQ expression.
+2️⃣ The second parameter is optional. You can pass a LINQ expression.
+
+⚠️ Important note for PostgreSQL:
+Bulk.Delete does not work with PostgreSQL.
 
 ## Compatibility
 
@@ -65,6 +71,7 @@ Bulk.Sql is compatible with .NET 6. It supports the following database providers
 ## Support
 
 If you need any assistance or have any questions, feel free to reach out to me at junioranheu@gmail.com.
+
 
 
 
