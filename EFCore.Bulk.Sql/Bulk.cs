@@ -3,14 +3,12 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
 using Npgsql;
-using System;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using static EFCore.Bulk.Sql.Helpers.Common;
 
 namespace EFCore.Bulk.Sql
 {
@@ -434,159 +432,6 @@ namespace EFCore.Bulk.Sql
             {
                 throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoDeletar, en: ExceptionEnum.ErroInternoDeletar_EN, extra: $"{ex.Message}."));
             }
-        }
-        #endregion
-
-        #region helpers
-        private static DataTable ConvertListToDataTable<T>(List<T> linq, SqlBulkCopy? sqlBulk, bool isExceptionInPortuguese)
-        {
-            try
-            {
-                DataTable dataTable = new(typeof(T).Name);
-                PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-                List<PropertyInfo> listTypes = new();
-
-                MapColumns(sqlBulk, dataTable, props, listTypes, isExceptionInPortuguese);
-                PopulateTable(linq, dataTable, listTypes, isExceptionInPortuguese);
-
-                return dataTable;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoConverterDados, en: ExceptionEnum.ErroInternoConverterDados_EN, extra: $"{ex.Message}."));
-            }
-        }
-
-        private static void MapColumns(SqlBulkCopy? sqlBulk, DataTable dataTable, PropertyInfo[] props, List<PropertyInfo> listTypes, bool isExceptionInPortuguese)
-        {
-            try
-            {
-                foreach (PropertyInfo prop in props)
-                {
-                    Type? type = prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>) ? Nullable.GetUnderlyingType(prop.PropertyType) : prop.PropertyType;
-
-                    if (!IsForeignKey(prop) && !IsNotMapped(prop) && !IsVirtual(prop) && !IsAbstract(prop) && !IsList(prop))
-                    {
-                        sqlBulk?.ColumnMappings.Add(prop.Name, prop.Name);
-                        dataTable.Columns.Add(prop.Name, type!);
-
-                        listTypes.Add(prop);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoMapearTabelaVirtual, en: ExceptionEnum.ErroInternoMapearTabelaVirtual_EN, extra: $"{ex.Message}."));
-            }
-        }
-
-        private static void PopulateTable<T>(List<T> linq, DataTable dataTable, List<PropertyInfo> listTypes, bool isExceptionInPortuguese)
-        {
-            try
-            {
-                foreach (T item in linq)
-                {
-                    var values = new object[dataTable.Columns.Count];
-
-                    for (int i = 0; i < values.Length; i++)
-                    {
-                        if (!IsForeignKey(listTypes[i]) && !IsNotMapped(listTypes[i]) && !IsVirtual(listTypes[i]) && !IsAbstract(listTypes[i]) && !IsList(listTypes[i]))
-                        {
-                            values[i] = listTypes[i].GetValue(item, null)!;
-                        }
-                    }
-
-                    dataTable.Rows.Add(values);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoAtribuirValoresTabelaVirtual, en: ExceptionEnum.ErroInternoAtribuirValoresTabelaVirtual_EN, extra: $"{ex.Message}."));
-            }
-        }
-
-        private static bool IsForeignKey(PropertyInfo property)
-        {
-            var propertyType = property.PropertyType;
-            var isCollection = propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(ICollection<>);
-            var isClass = propertyType.IsClass && propertyType != typeof(string);
-            var isByteArray = propertyType == typeof(byte[]);
-
-            return (isCollection || isClass) && !isByteArray;
-        }
-
-        private static bool IsNotMapped(PropertyInfo property)
-        {
-            return Attribute.IsDefined(property, typeof(NotMappedAttribute));
-        }
-
-        private static bool IsVirtual(PropertyInfo property)
-        {
-            try
-            {
-                return property.GetGetMethod()?.IsVirtual == true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool IsAbstract(PropertyInfo property)
-        {
-            try
-            {
-                return property.GetGetMethod()?.IsAbstract == true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool IsList(PropertyInfo property)
-        {
-            try
-            {
-                Type propertyType = property.PropertyType;
-
-                if (propertyType.IsGenericType && (propertyType.GetGenericTypeDefinition() == typeof(List<>) || propertyType.GetGenericTypeDefinition() == typeof(IQueryable<>) || propertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
-                {
-                    return true;
-                }
-
-                return false;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static string GetEnumDesc(Enum enumVal)
-        {
-            MemberInfo[] memInfo = enumVal.GetType().GetMember(enumVal.ToString());
-            DescriptionAttribute? attribute = memInfo[0].GetCustomAttribute<DescriptionAttribute>();
-
-            return attribute!.Description;
-        }
-
-        private static string GetExceptionText(bool? isExceptionInPortuguese, ExceptionEnum br, ExceptionEnum en, string extra = "")
-        {
-            return $"{GetEnumDesc(isExceptionInPortuguese.GetValueOrDefault() ? br : en)}{(!string.IsNullOrEmpty(extra) ? $" {extra}" : string.Empty)}";
-        }
-
-        private static string ToSnakeCase(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                return name;
-            }
-
-            var startUnderscores = Regex.Match(name, @"^_+");
-            var output = startUnderscores + Regex.Replace(name, @"([a-z0-9])([A-Z])", "$1_$2").ToLower();
-
-            return output;
         }
         #endregion
     }
