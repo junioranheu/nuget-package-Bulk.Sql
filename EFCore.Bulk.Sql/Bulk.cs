@@ -3,12 +3,14 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
 using Npgsql;
+using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace EFCore.Bulk.Sql
 {
@@ -196,55 +198,211 @@ namespace EFCore.Bulk.Sql
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking (via triggers).</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        private static async Task BulkInsert<T>(List<T> linq, NpgsqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false)
+        private static async Task BulkInsert<T>(List<T> linq, NpgsqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
                 throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ParamConexNaoPodeSerNulo, en: ExceptionEnum.ParamConexNaoPodeSerNulo_EN));
             }
 
-            DataTable dataTable = ConvertListToDataTable(linq, null, isExceptionInPortuguese.GetValueOrDefault(), isPostgreSQL: true);
+            if (linq is null || linq.Count == 0)
+            {
+                return;
+            }
+
+            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead).ToArray();
+
+            if (props.Length == 0)
+            {
+                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoSalvar, en: ExceptionEnum.ErroInternoSalvar_EN, extra: "Tipo T não possui propriedades públicas legíveis."));
+            }
+
+            string schemaName;
+            string tableName;
+
+            void StripQuotes(ref string s)
+            {
+                if (s.StartsWith("\"") && s.EndsWith("\"") && s.Length >= 2)
+                {
+                    s = s[1..^1];
+                }
+            }
+
+            if (table.Contains('.'))
+            {
+                var idx = table.IndexOf('.');
+                var left = table[..idx];
+                var right = table[(idx + 1)..];
+                schemaName = left.Trim();
+                tableName = right.Trim();
+                StripQuotes(ref schemaName);
+                StripQuotes(ref tableName);
+            }
+            else
+            {
+                schemaName = "public";
+                tableName = table.Trim();
+                StripQuotes(ref tableName);
+            }
 
             try
             {
                 await con.OpenAsync();
+                await using var tx = await con.BeginTransactionAsync();
+
+                List<string> dbColumns = new();
+
+                using (var colCmd = con.CreateCommand())
+                {
+                    colCmd.CommandText =
+                        @"SELECT column_name
+                  FROM information_schema.columns
+                  WHERE table_schema = @schema AND table_name = @table
+                  ORDER BY ordinal_position;";
+
+                    colCmd.Parameters.AddWithValue("schema", schemaName);
+                    colCmd.Parameters.AddWithValue("table", tableName);
+
+                    using var rdr = await colCmd.ExecuteReaderAsync();
+                    while (await rdr.ReadAsync())
+                    {
+                        dbColumns.Add(rdr.GetString(0));
+                    }
+                }
+
+                if (dbColumns.Count == 0)
+                {
+                    throw new Exception($"Tabela não encontrada ou sem colunas: {schemaName}.{tableName}");
+                }
+
+                Dictionary<string, PropertyInfo> propDict = props.ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
+
+                List<(string ColumnName, PropertyInfo? Prop)> columnsToUse = new();
+
+                foreach (var col in dbColumns)
+                {
+                    if (propDict.TryGetValue(col, out var prop))
+                    {
+                        columnsToUse.Add((col, prop));
+                        continue;
+                    }
+
+                    string snake = Regex.Replace(col, "([a-z0-9])([A-Z])", "$1_$2").ToLower();
+
+                    PropertyInfo? found = props.FirstOrDefault(p =>
+                        string.Equals(p.Name, snake, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(ToSnakeCase(p.Name), col, StringComparison.OrdinalIgnoreCase)
+                    );
+
+                    if (found != null)
+                    {
+                        columnsToUse.Add((col, found));
+                        continue;
+                    }
+
+                    // Coluna sem propriedade correspondente -> será inserido NULL nessa coluna;
+                    columnsToUse.Add((col, null));
+                }
+
+                string QuoteIdent(string ident) => $"\"{ident.Replace("\"", "\"\"")}\"";
+                string[] quotedColumns = columnsToUse.Select(c => QuoteIdent(c.ColumnName)).ToArray();
+                string copyTableExpression = table;
+
+                if (!table.Contains('"'))
+                {
+                    copyTableExpression = $"{QuoteIdent(schemaName)}.{QuoteIdent(tableName)}";
+                }
+
+                string copyCommand = $"COPY {copyTableExpression} ({string.Join(", ", quotedColumns)}) FROM STDIN (FORMAT BINARY)";
 
                 if (isDisableFKCheck.GetValueOrDefault())
                 {
-                    using NpgsqlCommand disableTriggersCmd = new($"ALTER TABLE {table} DISABLE TRIGGER ALL", con);
-                    await disableTriggersCmd.ExecuteNonQueryAsync();
+                    using NpgsqlCommand disableCmd = con.CreateCommand();
+                    disableCmd.CommandText = $"ALTER TABLE {copyTableExpression} DISABLE TRIGGER ALL;";
+
+                    await disableCmd.ExecuteNonQueryAsync();
                 }
 
-                string[] columnNames = dataTable.Columns.Cast<DataColumn>().Select(c => c.ColumnName).ToArray();
-                string columnsSql = string.Join(", ", columnNames);
-
-                using (var writer = con.BeginBinaryImport($"COPY {table} ({columnsSql}) FROM STDIN (FORMAT BINARY)"))
+                if (timeOut.HasValue)
                 {
-                    foreach (DataRow row in dataTable.Rows)
-                    {
-                        await writer.StartRowAsync();
+                    using NpgsqlCommand tCmd = con.CreateCommand();
+                    int ms = Math.Max(0, timeOut.Value) * 1000;
+                    tCmd.CommandText = $"SET statement_timeout = {ms};";
 
-                        foreach (var col in columnNames)
+                    await tCmd.ExecuteNonQueryAsync();
+                }
+
+                using (var importer = con.BeginBinaryImport(copyCommand))
+                {
+                    foreach (var item in linq)
+                    {
+                        importer.StartRow();
+
+                        foreach (var (ColumnName, Prop) in columnsToUse)
                         {
-                            await writer.WriteAsync(row[col] == DBNull.Value ? null : row[col]);
+                            if (Prop == null)
+                            {
+                                importer.WriteNull();
+                            }
+                            else
+                            {
+                                object? val = Prop.GetValue(item);
+
+                                if (val is null)
+                                {
+                                    importer.WriteNull();
+                                }
+                                else
+                                {
+                                    Type t = Prop.PropertyType;
+
+                                    if (t.IsEnum)
+                                    {
+                                        importer.Write(Convert.ToInt32(val));
+                                    }
+                                    else
+                                    {
+                                        importer.Write(val);
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    await writer.CompleteAsync();
+                    importer.Complete();
                 }
 
                 if (isDisableFKCheck.GetValueOrDefault())
                 {
-                    using NpgsqlCommand enableTriggersCmd = new($"ALTER TABLE {table} ENABLE TRIGGER ALL", con);
-                    await enableTriggersCmd.ExecuteNonQueryAsync();
+                    using NpgsqlCommand enableCmd = con.CreateCommand();
+                    enableCmd.CommandText = $"ALTER TABLE {copyTableExpression} ENABLE TRIGGER ALL;";
+
+                    await enableCmd.ExecuteNonQueryAsync();
                 }
 
+                if (timeOut.HasValue)
+                {
+                    using NpgsqlCommand tCmd2 = con.CreateCommand();
+                    tCmd2.CommandText = "SET statement_timeout = 0;";
+
+                    await tCmd2.ExecuteNonQueryAsync();
+                }
+
+                await tx.CommitAsync();
                 await con.CloseAsync();
-                dataTable.Clear();
+                linq.Clear();
             }
             catch (Exception ex)
             {
-                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoSalvar, en: ExceptionEnum.ErroInternoSalvar_EN, extra: $"{ex.Message}."));
+                try
+                {
+                    await con.CloseAsync();
+                }
+                catch
+                {
+                }
+
+                throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ErroInternoSalvar, en: ExceptionEnum.ErroInternoSalvar_EN, extra: $"{ex.Message}"));
             }
         }
         #endregion
@@ -275,7 +433,7 @@ namespace EFCore.Bulk.Sql
         #endregion
 
         #region helpers
-        private static DataTable ConvertListToDataTable<T>(List<T> linq, SqlBulkCopy? sqlBulk, bool isExceptionInPortuguese, bool isPostgreSQL = false)
+        private static DataTable ConvertListToDataTable<T>(List<T> linq, SqlBulkCopy? sqlBulk, bool isExceptionInPortuguese)
         {
             try
             {
@@ -283,7 +441,7 @@ namespace EFCore.Bulk.Sql
                 PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
                 List<PropertyInfo> listTypes = new();
 
-                MapColumns(sqlBulk, dataTable, props, listTypes, isExceptionInPortuguese, isPostgreSQL);
+                MapColumns(sqlBulk, dataTable, props, listTypes, isExceptionInPortuguese);
                 PopulateTable(linq, dataTable, listTypes, isExceptionInPortuguese);
 
                 return dataTable;
@@ -294,7 +452,7 @@ namespace EFCore.Bulk.Sql
             }
         }
 
-        private static void MapColumns(SqlBulkCopy? sqlBulk, DataTable dataTable, PropertyInfo[] props, List<PropertyInfo> listTypes, bool isExceptionInPortuguese, bool isPostgreSQL)
+        private static void MapColumns(SqlBulkCopy? sqlBulk, DataTable dataTable, PropertyInfo[] props, List<PropertyInfo> listTypes, bool isExceptionInPortuguese)
         {
             try
             {
@@ -305,9 +463,7 @@ namespace EFCore.Bulk.Sql
                     if (!IsForeignKey(prop) && !IsNotMapped(prop) && !IsVirtual(prop) && !IsAbstract(prop) && !IsList(prop))
                     {
                         sqlBulk?.ColumnMappings.Add(prop.Name, prop.Name);
-
-                        string propName = !isPostgreSQL ? prop.Name : $"\"{prop.Name}\"";
-                        dataTable.Columns.Add(propName, type!);
+                        dataTable.Columns.Add(prop.Name, type!);
 
                         listTypes.Add(prop);
                     }
@@ -413,6 +569,19 @@ namespace EFCore.Bulk.Sql
         private static string GetExceptionText(bool? isExceptionInPortuguese, ExceptionEnum br, ExceptionEnum en, string extra = "")
         {
             return $"{GetEnumDesc(isExceptionInPortuguese.GetValueOrDefault() ? br : en)}{(!string.IsNullOrEmpty(extra) ? $" {extra}" : string.Empty)}";
+        }
+
+        private static string ToSnakeCase(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return name;
+            }
+
+            var startUnderscores = Regex.Match(name, @"^_+");
+            var output = startUnderscores + Regex.Replace(name, @"([a-z0-9])([A-Z])", "$1_$2").ToLower();
+
+            return output;
         }
         #endregion
     }
