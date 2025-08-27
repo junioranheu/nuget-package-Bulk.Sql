@@ -30,13 +30,7 @@ dotnet add package Bulk.Sql
 Once you have installed the Bulk.Sql package, you can follow these steps to start using it in your .NET 6 project:
 
 ```
-await Bulk.Helpers.BulkInsert(list, _context, "TableName");
-```
-
-or
-
-```
-await Bulk.Helpers.BulkInsert(list, con, "TableName");
+await Bulk.BulkInsert(list, _context, "TableName");
 ```
 
 The first parameter requires a list — commonly resulting from a LINQ query.
@@ -51,7 +45,7 @@ There are other optional parameters. Be sure to check them out after downloading
 ### BulkDelete usage
 
 ```
-await Bulk.Helpers.BulkDelete<ClassHere>(_context, condition: x => x.Status == true && x.Amount >= 22);
+await Bulk.BulkDelete<ClassHere>(_context, condition: x => x.Status == true && x.Amount >= 22);
 ```
 
 or
@@ -71,4 +65,5 @@ Bulk.Sql is compatible with .NET 6. It supports the following database providers
 ## Support
 
 If you need any assistance or have any questions, feel free to reach out to me at junioranheu@gmail.com.
+
 
