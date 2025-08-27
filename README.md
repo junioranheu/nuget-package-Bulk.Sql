@@ -41,8 +41,8 @@ await Bulk.Helpers.BulkInsert(list, con, "TableName");
 
 The first parameter requires a list — commonly resulting from a LINQ query.
 
-The second parameter allows you to pass whether the application's context, a SqlConnection (Microsoft.Data.SqlClient or System.Data.SqlClient), or a MySqlConnection data base connection.<br/>
-E.g.: new SqlConnection(connectionString) or new MySqlConnection(connectionString).
+The second parameter allows you to pass whether the application's context, a SqlConnection (Microsoft.Data.SqlClient or System.Data.SqlClient), a MySqlConnection or a NpgsqlConnection data base connection.<br/>
+E.g.: new SqlConnection(connectionString), new MySqlConnection(connectionString), or NpgsqlConnection(connectionString).
 
 The third parameter requires the aiming table's name.
 
@@ -66,8 +66,9 @@ The second parameter is optional. You can pass a LINQ expression.
 
 ## Compatibility
 
-Bulk.Sql is compatible with .NET 6. It supports the following database providers: SQL Server (Microsoft.Data.SqlClient or System.Data.SqlClient) and MySQL.
+Bulk.Sql is compatible with .NET 6. It supports the following database providers: SQL Server (Microsoft.Data.SqlClient or System.Data.SqlClient), MySQL, and PostgreSQL.
 
 ## Support
 
 If you need any assistance or have any questions, feel free to reach out to me at junioranheu@gmail.com.
+
