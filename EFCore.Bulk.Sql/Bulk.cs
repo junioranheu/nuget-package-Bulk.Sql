@@ -203,7 +203,7 @@ namespace EFCore.Bulk.Sql
                 throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.ParamConexNaoPodeSerNulo, en: ExceptionEnum.ParamConexNaoPodeSerNulo_EN));
             }
 
-            DataTable dataTable = ConvertListToDataTable(linq, null, isExceptionInPortuguese.GetValueOrDefault());
+            DataTable dataTable = ConvertListToDataTable(linq, null, isExceptionInPortuguese.GetValueOrDefault(), isPostgreSQL: true);
 
             try
             {
@@ -275,7 +275,7 @@ namespace EFCore.Bulk.Sql
         #endregion
 
         #region helpers
-        private static DataTable ConvertListToDataTable<T>(List<T> linq, SqlBulkCopy? sqlBulk, bool isExceptionInPortuguese)
+        private static DataTable ConvertListToDataTable<T>(List<T> linq, SqlBulkCopy? sqlBulk, bool isExceptionInPortuguese, bool isPostgreSQL = false)
         {
             try
             {
@@ -283,7 +283,7 @@ namespace EFCore.Bulk.Sql
                 PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
                 List<PropertyInfo> listTypes = new();
 
-                MapColumns(sqlBulk, dataTable, props, listTypes, isExceptionInPortuguese);
+                MapColumns(sqlBulk, dataTable, props, listTypes, isExceptionInPortuguese, isPostgreSQL);
                 PopulateTable(linq, dataTable, listTypes, isExceptionInPortuguese);
 
                 return dataTable;
@@ -294,7 +294,7 @@ namespace EFCore.Bulk.Sql
             }
         }
 
-        private static void MapColumns(SqlBulkCopy? sqlBulk, DataTable dataTable, PropertyInfo[] props, List<PropertyInfo> listTypes, bool isExceptionInPortuguese)
+        private static void MapColumns(SqlBulkCopy? sqlBulk, DataTable dataTable, PropertyInfo[] props, List<PropertyInfo> listTypes, bool isExceptionInPortuguese, bool isPostgreSQL)
         {
             try
             {
@@ -305,7 +305,9 @@ namespace EFCore.Bulk.Sql
                     if (!IsForeignKey(prop) && !IsNotMapped(prop) && !IsVirtual(prop) && !IsAbstract(prop) && !IsList(prop))
                     {
                         sqlBulk?.ColumnMappings.Add(prop.Name, prop.Name);
-                        dataTable.Columns.Add(prop.Name, type!);
+
+                        string propName = !isPostgreSQL ? prop.Name : $"\"{prop.Name}\"";
+                        dataTable.Columns.Add(propName, type!);
 
                         listTypes.Add(prop);
                     }
