@@ -28,7 +28,7 @@ namespace EFCore.Bulk.Sql
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking.</param>
-        public static async Task BulkInsert<T, TContext>(List<T> linq, TContext context, string table, int? timeOut = timeOutDefault, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false) where TContext : DbContext
+        public static async Task Insert<T, TContext>(List<T> linq, TContext context, string table, int? timeOut = timeOutDefault, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false) where TContext : DbContext
         {
             if (context is null)
             {
@@ -39,19 +39,19 @@ namespace EFCore.Bulk.Sql
 
             if (con is SqlConnection)
             {
-                await BulkInsert(linq, con as SqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
+                await Insert(linq, con as SqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
             else if (con is System.Data.SqlClient.SqlConnection)
             {
-                await BulkInsert(linq, con as System.Data.SqlClient.SqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
+                await Insert(linq, con as System.Data.SqlClient.SqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
             else if (con is MySqlConnection)
             {
-                await BulkInsert(linq, con as MySqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
+                await Insert(linq, con as MySqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
             else if (con is NpgsqlConnection)
             {
-                await BulkInsert(linq, con as NpgsqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault());
+                await Insert(linq, con as NpgsqlConnection, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault());
             }
             else
             {
@@ -68,7 +68,7 @@ namespace EFCore.Bulk.Sql
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        private static async Task BulkInsert<T>(List<T> linq, SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        private static async Task Insert<T>(List<T> linq, SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
@@ -120,7 +120,7 @@ namespace EFCore.Bulk.Sql
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        private static async Task BulkInsert<T>(List<T> linq, System.Data.SqlClient.SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        private static async Task Insert<T>(List<T> linq, System.Data.SqlClient.SqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
@@ -130,7 +130,7 @@ namespace EFCore.Bulk.Sql
             try
             {
                 SqlConnection conMicrosoft = new(con.ConnectionString);
-                await BulkInsert(linq, conMicrosoft, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
+                await Insert(linq, conMicrosoft, table, isExceptionInPortuguese.GetValueOrDefault(), isDisableFKCheck.GetValueOrDefault(), timeOut);
             }
             catch (Exception)
             {
@@ -147,7 +147,7 @@ namespace EFCore.Bulk.Sql
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking.</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        private static async Task BulkInsert<T>(List<T> linq, MySqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        private static async Task Insert<T>(List<T> linq, MySqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
@@ -198,7 +198,7 @@ namespace EFCore.Bulk.Sql
         /// <param name="isExceptionInPortuguese">Exception's text language.</param>
         /// <param name="isDisableFKCheck">Controlling the database FKs checking (via triggers).</param>
         /// <param name="timeOut">Bulk copy time out in seconds.</param>
-        private static async Task BulkInsert<T>(List<T> linq, NpgsqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
+        private static async Task Insert<T>(List<T> linq, NpgsqlConnection? con, string table, bool? isExceptionInPortuguese = false, bool? isDisableFKCheck = false, int? timeOut = timeOutDefault)
         {
             if (con is null)
             {
@@ -413,7 +413,7 @@ namespace EFCore.Bulk.Sql
         /// </summary>
         /// <param name="dbContext">Application's context.</param>
         /// <param name="condition">LINQ's "where" condition.</param>
-        public static async Task BulkDelete<T>(DbContext dbContext, Expression<Func<T, bool>>? condition = null, bool? isExceptionInPortuguese = false) where T : class
+        public static async Task Delete<T>(DbContext dbContext, Expression<Func<T, bool>>? condition = null, bool? isExceptionInPortuguese = false) where T : class
         {
             try
             {
