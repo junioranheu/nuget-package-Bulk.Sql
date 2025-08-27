@@ -12,7 +12,7 @@ using System.Reflection;
 
 namespace EFCore.Bulk.Sql
 {
-    public static class Helpers
+    public static class Bulk
     {
         private const int timeOutDefault = 180;
 
