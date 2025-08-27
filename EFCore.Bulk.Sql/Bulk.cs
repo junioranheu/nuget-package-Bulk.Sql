@@ -417,6 +417,11 @@ namespace EFCore.Bulk.Sql
         {
             try
             {
+                if (dbContext.Database.ProviderName?.Contains("Npgsql") == true)
+                {
+                    throw new Exception(GetExceptionText(isExceptionInPortuguese, br: ExceptionEnum.PostgreSQLNaoPodeDeletar, en: ExceptionEnum.PostgreSQLNaoPodeDeletar_EN));
+                }
+
                 if (condition is null)
                 {
                     await dbContext.Set<T>().ExecuteDeleteAsync();

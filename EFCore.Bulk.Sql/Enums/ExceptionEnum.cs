@@ -33,7 +33,7 @@ namespace EFCore.Bulk.Sql.Enums
 
         [Description("There was an internal error while assigning values to the DataTable.")]
         ErroInternoAtribuirValoresTabelaVirtual_EN,
-        
+
         [Description("Houve um erro interno ao converter os dados.")]
         ErroInternoConverterDados,
 
@@ -50,6 +50,12 @@ namespace EFCore.Bulk.Sql.Enums
         ErroInternoDeletar,
 
         [Description("There was an internal error while deleting the data.")]
-        ErroInternoDeletar_EN
+        ErroInternoDeletar_EN,
+
+        [Description("Operação não permitida no PostgreSQL.")]
+        PostgreSQLNaoPodeDeletar,
+
+        [Description("Operation not allowed on PostgreSQL.")]
+        PostgreSQLNaoPodeDeletar_EN
     }
 }
